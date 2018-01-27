@@ -4,28 +4,24 @@ type GameConnection interface {
 	broadcast(message Message) error
 }
 
-type GameState string
-
-const (
-	WaitingState    GameState = "waiting"
-	ProductionState GameState = "production"
-	AuctionState    GameState = "auction"
-	TradeState      GameState = "trade"
-)
-
 type Game struct {
 	connection GameConnection
-	state      GameState
+	state      StateController
 }
 
-func NewGame(connection GameConnection) Game {
-	return Game{
+func NewGame(connection GameConnection) *Game {
+	game := Game{
 		connection: connection,
-		state:      WaitingState,
+		state:      nil,
 	}
+	game.state = NewStateController(&game, WaitingState)
+	game.state.Begin()
+	return &game
 }
 
 func (g *Game) ChangeState(newState GameState) {
-	g.state = newState
+	g.state.End()
 	g.connection.broadcast(NewGameStateChangedMessage(newState))
+	g.state = NewStateController(g, newState)
+	g.state.Begin()
 }

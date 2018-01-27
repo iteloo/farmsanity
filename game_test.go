@@ -37,7 +37,7 @@ func TestChangeState(t *testing.T) {
 		t.Errorf("ChangeState(WaitingState): %v", diff)
 	}
 
-	if game.state != TradeState {
+	if game.state.Name() != TradeState {
 		t.Errorf("game.state = %v, want %v", game.state, TradeState)
 	}
 }
