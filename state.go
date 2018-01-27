@@ -1,5 +1,9 @@
 package main
 
+import (
+	"math/rand"
+)
+
 type GameState string
 
 const (
@@ -53,8 +57,15 @@ func NewAuctionController(game *Game) *AuctionController {
 	}
 }
 func (s *AuctionController) Name() GameState { return s.name }
-func (s *AuctionController) Begin()          {}
-func (s *AuctionController) End()            {}
+func (s *AuctionController) Begin() {
+	// When the auction begins, we need to choose a random number and broadcast
+	// it to the participants.
+	seed := rand.Int()
+	s.game.connection.broadcast(
+		NewAuctionSeedMessage(seed),
+	)
+}
+func (s *AuctionController) End() {}
 
 type TradeController struct {
 	name GameState
