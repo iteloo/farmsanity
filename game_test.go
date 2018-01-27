@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"math/rand"
 
 	"github.com/google/go-cmp/cmp"
 
@@ -39,5 +40,26 @@ func TestChangeState(t *testing.T) {
 
 	if game.state.Name() != TradeState {
 		t.Errorf("game.state = %v, want %v", game.state, TradeState)
+	}
+}
+
+func TestAuctionStart(t *testing.T) {
+	// Need to set the random seed to force deterministic behavior.
+	rand.Seed(1)
+	connection := TestConnection{}
+	game := NewGame(&connection)
+	game.ChangeState(AuctionState)
+
+	rand.Seed(1)
+	expected := TestConnection{}
+	expected.broadcast(NewGameStateChangedMessage(AuctionState))
+	expected.broadcast(NewAuctionSeedMessage(rand.Int()))
+
+	if diff := CompareBroadcastLog(connection, expected); diff != "" {
+		t.Errorf("ChangeState(WaitingState): %v", diff)
+	}
+
+	if game.state.Name() != AuctionState {
+		t.Errorf("game.state.Name() = %v, want %v", game.state.Name, AuctionState)
 	}
 }

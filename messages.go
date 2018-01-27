@@ -4,6 +4,7 @@ type MessageAction string
 
 const (
 	GameStateChangedAction MessageAction = "game_state_changed"
+	AuctionSeedAction      MessageAction = "auction_seed"
 )
 
 type Message interface{}
@@ -25,5 +26,17 @@ func NewGameStateChangedMessage(newState GameState) Message {
 	return GameStateChangedMessage{
 		Action:   string(GameStateChangedAction),
 		NewState: string(newState),
+	}
+}
+
+type AuctionSeedMessage struct {
+	Action string `json:"action"`
+	Seed   int    `json:"seed"`
+}
+
+func NewAuctionSeedMessage(seed int) Message {
+	return AuctionSeedMessage{
+		Action: string(AuctionSeedAction),
+		Seed:   seed,
 	}
 }
