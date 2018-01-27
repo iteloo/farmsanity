@@ -14,8 +14,9 @@ const (
 )
 
 const (
-	AuctionBidTime int64 = 100
-	TradeTimeout   int64 = 100
+	AuctionBidTime   int64 = 100
+	TradeTimeout     int64 = 100
+	TradingStageTime int64 = 1000
 )
 
 type StateController interface {
@@ -139,9 +140,20 @@ func NewTradeController(game *Game) *TradeController {
 		game: game,
 	}
 }
+
 func (s *TradeController) Name() GameState { return s.name }
-func (s *TradeController) Begin()          {}
-func (s *TradeController) End()            {}
+
+func (s *TradeController) Begin() {
+	// The trading stage ends after a certain time.
+	s.game.SetTimeout(TradingStageTime)
+}
+
+func (s *TradeController) Timer(tick int64) {
+	// The stage is over, so begin the next stage.
+	s.game.ChangeState(ProductionState)
+}
+
+func (s *TradeController) End() {}
 func (s *TradeController) RecieveMessage(u User, m Message) {
 	switch msg := m.(type) {
 	case TradeMessage:
@@ -163,8 +175,6 @@ func (s *TradeController) RecieveMessage(u User, m Message) {
 		}
 	}
 }
-
-func (s *TradeController) Timer(tick int64) {}
 
 func NewStateController(game *Game, state GameState) StateController {
 	switch state {
