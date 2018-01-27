@@ -15,6 +15,7 @@ const (
 	BidAction          MessageAction = "bid"
 	ReadyAction        MessageAction = "ready"
 	JoinAction         MessageAction = "join"
+	LeaveAction        MessageAction = "leave"
 	SaleAction         MessageAction = "join"
 	TradeAction        MessageAction = "trade"
 	ActivateCardAction MessageAction = "activate_card"
@@ -85,6 +86,30 @@ type AuctionWonMessage struct {
 
 func NewAuctionWonMessage() Message {
 	return AuctionWonMessage{string(AuctionWonAction)}
+}
+
+type ReadyMessage struct {
+	Action string `json:"action"`
+}
+
+func NewReadyMessage() Message {
+	return ReadyMessage{string(ReadyAction)}
+}
+
+type JoinMessage struct {
+	Action string `json:"action"`
+}
+
+func NewJoinMessage() Message {
+	return JoinMessage{string(JoinAction)}
+}
+
+type LeaveMessage struct {
+	Action string `json:"action"`
+}
+
+func NewLeaveMessage() Message {
+	return LeaveMessage{string(LeaveAction)}
 }
 
 type TradeMessage struct {

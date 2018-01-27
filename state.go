@@ -17,6 +17,8 @@ const (
 	AuctionBidTime   int64 = 100
 	TradeTimeout     int64 = 100
 	TradingStageTime int64 = 1000
+
+	MinPlayers int = 2
 )
 
 type StateController interface {
@@ -28,19 +30,48 @@ type StateController interface {
 }
 
 type WaitingController struct {
-	name GameState
+	game  *Game
+	name  GameState
+	ready map[User]bool
 }
 
 func NewWaitingController(game *Game) *WaitingController {
 	return &WaitingController{
-		name: WaitingState,
+		game:  game,
+		name:  WaitingState,
+		ready: map[User]bool{},
 	}
 }
-func (s *WaitingController) Name() GameState                  { return s.name }
-func (s *WaitingController) Begin()                           {}
-func (s *WaitingController) End()                             {}
-func (s *WaitingController) Timer(tick int64)                 {}
-func (s *WaitingController) RecieveMessage(u User, m Message) {}
+func (s *WaitingController) Name() GameState  { return s.name }
+func (s *WaitingController) Begin()           {}
+func (s *WaitingController) End()             {}
+func (s *WaitingController) Timer(tick int64) {}
+func (s *WaitingController) RecieveMessage(u User, m Message) {
+	switch m.(type) {
+	case ReadyMessage:
+		s.ready[u] = true
+		s.proceedIfReady()
+	case JoinMessage:
+		s.ready[u] = false
+	case LeaveMessage:
+		delete(s.ready, u)
+		s.proceedIfReady()
+	}
+}
+
+func (s *WaitingController) proceedIfReady() {
+	count := 0
+	for _, v := range s.ready {
+		if !v {
+			return
+		}
+		count += 1
+	}
+
+	if count >= MinPlayers {
+		s.game.ChangeState(ProductionState)
+	}
+}
 
 type ProductionController struct {
 	name GameState

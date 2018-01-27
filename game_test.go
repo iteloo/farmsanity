@@ -82,6 +82,77 @@ func TestAuctionStart(t *testing.T) {
 	}
 }
 
+func TestReadyMechanism(t *testing.T) {
+	connection := TestConnection{}
+	game := NewGame(&connection)
+
+	userA := &TestUser{}
+	userB := &TestUser{}
+	game.RecieveMessage(userA, NewReadyMessage())
+
+	if game.state.Name() != WaitingState {
+		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), WaitingState)
+	}
+
+	// If the user posts ready again, it shouldn't work, since
+	// we need two different players.
+	game.RecieveMessage(userA, NewReadyMessage())
+	if game.state.Name() != WaitingState {
+		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), WaitingState)
+	}
+
+	// Now the game should start.
+	game.RecieveMessage(userB, NewReadyMessage())
+	if game.state.Name() != ProductionState {
+		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), ProductionState)
+	}
+}
+
+func TestReadyMechanismWithMorePlayers(t *testing.T) {
+	connection := TestConnection{}
+	game := NewGame(&connection)
+
+	userA := &TestUser{}
+	userB := &TestUser{}
+	userC := &TestUser{}
+	game.RecieveMessage(userA, NewReadyMessage())
+	game.RecieveMessage(userB, NewJoinMessage())
+	game.RecieveMessage(userC, NewReadyMessage())
+
+	// Since user B has joined but is not ready, game shouldn't start.
+	if game.state.Name() != WaitingState {
+		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), WaitingState)
+	}
+
+	game.RecieveMessage(userB, NewReadyMessage())
+	if game.state.Name() != ProductionState {
+		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), ProductionState)
+	}
+}
+
+func TestReadyMechanismWithLeaver(t *testing.T) {
+	connection := TestConnection{}
+	game := NewGame(&connection)
+
+	userA := &TestUser{}
+	userB := &TestUser{}
+	userC := &TestUser{}
+	game.RecieveMessage(userA, NewReadyMessage())
+	game.RecieveMessage(userB, NewJoinMessage())
+	game.RecieveMessage(userC, NewReadyMessage())
+
+	// Since user B has joined but is not ready, game shouldn't start.
+	if game.state.Name() != WaitingState {
+		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), WaitingState)
+	}
+
+	// Now the user has left, and the rest are ready, so begin.
+	game.RecieveMessage(userB, NewLeaveMessage())
+	if game.state.Name() != ProductionState {
+		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), ProductionState)
+	}
+}
+
 func TestAuctionPhases(t *testing.T) {
 	// Need to set the random seed to force deterministic behavior.
 	rand.Seed(1)
