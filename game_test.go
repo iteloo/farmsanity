@@ -81,3 +81,36 @@ func TestAuctionStart(t *testing.T) {
 		t.Errorf("game.state.Name() = %v, want %v", game.state.Name, AuctionState)
 	}
 }
+
+func TestAuctionPhases(t *testing.T) {
+	// Need to set the random seed to force deterministic behavior.
+	rand.Seed(1)
+	connection := TestConnection{}
+	game := NewGame(&connection)
+	game.ChangeState(AuctionState)
+
+	// Bid on a card.
+	user := &TestUser{}
+	game.RecieveMessage(user, NewBidMessage(10))
+
+	// Wait until the player wins.
+	game.Tick(AuctionBidTime + 1)
+
+	// Wait until the second auction expires with no bids.
+	game.Tick(2*AuctionBidTime + 2)
+
+	// Wait until the third auction expires with no bids.
+	game.Tick(3*AuctionBidTime + 3)
+
+	rand.Seed(1)
+	expected := TestConnection{}
+	expected.broadcast(NewGameStateChangedMessage(AuctionState))
+	expected.broadcast(NewAuctionSeedMessage(rand.Int()))
+	expected.broadcast(NewAuctionSeedMessage(rand.Int()))
+	expected.broadcast(NewAuctionSeedMessage(rand.Int()))
+	expected.broadcast(NewGameStateChangedMessage(TradeState))
+
+	if diff := CompareBroadcastLog(connection, expected); diff != "" {
+		t.Errorf("ChangeState(WaitingState): %v", diff)
+	}
+}

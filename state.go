@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 )
 
@@ -73,13 +74,21 @@ func NewAuctionController(game *Game) *AuctionController {
 }
 func (s *AuctionController) Name() GameState { return s.name }
 func (s *AuctionController) Begin() {
+	s.issueCard()
+}
+
+func (s *AuctionController) issueCard() {
 	// When the auction begins, we need to choose a random number and broadcast
 	// it to the participants.
 	seed := rand.Int()
 	s.game.connection.broadcast(
 		NewAuctionSeedMessage(seed),
 	)
+
+	// Set a timeout.
+	s.game.SetTimeout(AuctionBidTime)
 }
+
 func (s *AuctionController) End() {}
 
 // The timer is only used to determine when the auction is over. So when we get
@@ -87,6 +96,21 @@ func (s *AuctionController) End() {}
 func (s *AuctionController) Timer(tick int64) {
 	if s.winner != nil {
 		s.winner.Message(NewAuctionWonMessage())
+	}
+
+	// Reset the bid and winner.
+	s.bid = 0
+	s.winner = nil
+
+	s.step += 1
+
+	if s.step == s.steps {
+		// We've reached the end of the auction process. So let's change
+		// phases. The TradeState is next.
+		s.game.ChangeState(TradeState)
+	} else {
+		// Issue the next card.
+		s.issueCard()
 	}
 }
 

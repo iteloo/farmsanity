@@ -51,6 +51,7 @@ func TestAuctionTimeout(t *testing.T) {
 	want.Message(NewAuctionWonMessage())
 
 	if diff := CompareMessageLog(user, want); diff != "" {
-		t.Errorf("AuctionWonMessage: %q, %q, diff: %v", user.messageLog, want.messageLog, diff)
+		t.Errorf("AuctionWonMessage: %q, %q, diff: %v",
+			user.messageLog, want.messageLog, diff)
 	}
 }
