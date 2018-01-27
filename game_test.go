@@ -22,8 +22,26 @@ func (c *TestConnection) broadcast(message Message) error {
 	return nil
 }
 
+type TestUser struct {
+	name       string
+	messageLog []string
+}
+
+func (u *TestUser) Message(message Message) error {
+	result, err := json.Marshal(message)
+	if err != nil {
+		panic(err)
+	}
+	u.messageLog = append(u.messageLog, string(result))
+	return nil
+}
+
 func CompareBroadcastLog(got, want TestConnection) string {
 	return cmp.Diff(got.broadcastLog, want.broadcastLog)
+}
+
+func CompareMessageLog(got, want *TestUser) string {
+	return cmp.Diff(got.messageLog, want.messageLog)
 }
 
 func TestChangeState(t *testing.T) {

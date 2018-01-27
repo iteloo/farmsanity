@@ -13,10 +13,16 @@ const (
 	TradeState      GameState = "trade"
 )
 
+const (
+	AuctionBidTime int64 = 100
+)
+
 type StateController interface {
 	Name() GameState
 	Begin()
 	End()
+	Timer(tick int64)
+	RecieveMessage(User, Message)
 }
 
 type WaitingController struct {
@@ -28,9 +34,11 @@ func NewWaitingController(game *Game) *WaitingController {
 		name: WaitingState,
 	}
 }
-func (s *WaitingController) Name() GameState { return s.name }
-func (s *WaitingController) Begin()          {}
-func (s *WaitingController) End()            {}
+func (s *WaitingController) Name() GameState                  { return s.name }
+func (s *WaitingController) Begin()                           {}
+func (s *WaitingController) End()                             {}
+func (s *WaitingController) Timer(tick int64)                 {}
+func (s *WaitingController) RecieveMessage(u User, m Message) {}
 
 type ProductionController struct {
 	name GameState
@@ -41,19 +49,26 @@ func NewProductionController(game *Game) *ProductionController {
 		name: ProductionState,
 	}
 }
-func (s *ProductionController) Name() GameState { return s.name }
-func (s *ProductionController) Begin()          {}
-func (s *ProductionController) End()            {}
+func (s *ProductionController) Name() GameState                  { return s.name }
+func (s *ProductionController) Begin()                           {}
+func (s *ProductionController) End()                             {}
+func (s *ProductionController) Timer(tick int64)                 {}
+func (s *ProductionController) RecieveMessage(u User, m Message) {}
 
 type AuctionController struct {
-	name GameState
-	game *Game
+	name   GameState
+	game   *Game
+	bid    int
+	step   int
+	steps  int
+	winner User
 }
 
 func NewAuctionController(game *Game) *AuctionController {
 	return &AuctionController{
-		name: AuctionState,
-		game: game,
+		name:  AuctionState,
+		game:  game,
+		steps: 3,
 	}
 }
 func (s *AuctionController) Name() GameState { return s.name }
@@ -67,6 +82,25 @@ func (s *AuctionController) Begin() {
 }
 func (s *AuctionController) End() {}
 
+// The timer is only used to determine when the auction is over. So when we get
+// this call, the current auction is over.
+func (s *AuctionController) Timer(tick int64) {
+	if s.winner != nil {
+		s.winner.Message(NewAuctionWonMessage())
+	}
+}
+
+func (s *AuctionController) RecieveMessage(u User, m Message) {
+	switch msg := m.(type) {
+	case BidMessage:
+		if msg.Amount > s.bid {
+			s.bid = msg.Amount
+			s.winner = u
+			s.game.SetTimeout(AuctionBidTime)
+		}
+	}
+}
+
 type TradeController struct {
 	name GameState
 }
@@ -76,9 +110,11 @@ func NewTradeController(game *Game) *TradeController {
 		name: TradeState,
 	}
 }
-func (s *TradeController) Name() GameState { return s.name }
-func (s *TradeController) Begin()          {}
-func (s *TradeController) End()            {}
+func (s *TradeController) Name() GameState                  { return s.name }
+func (s *TradeController) Begin()                           {}
+func (s *TradeController) End()                             {}
+func (s *TradeController) RecieveMessage(u User, m Message) {}
+func (s *TradeController) Timer(tick int64)                 {}
 
 func NewStateController(game *Game, state GameState) StateController {
 	switch state {
