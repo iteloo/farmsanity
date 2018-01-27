@@ -45,6 +45,10 @@ func (g *Game) RecieveMessage(user User, message Message) {
 
 func (g *Game) ChangeState(newState GameState) {
 	g.state.End()
+
+	// Clean up any timers that are currently running
+	g.nextTimeout = 0
+
 	g.connection.broadcast(NewGameStateChangedMessage(newState))
 	g.state = NewStateController(g, newState)
 	g.state.Begin()
