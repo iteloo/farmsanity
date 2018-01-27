@@ -13,7 +13,7 @@ type TestConnection struct {
 	broadcastLog []string
 }
 
-func (c *TestConnection) broadcast(message Message) error {
+func (c *TestConnection) Broadcast(message Message) error {
 	result, err := json.Marshal(message)
 	if err != nil {
 		panic(err)
@@ -50,7 +50,7 @@ func TestChangeState(t *testing.T) {
 	game.ChangeState(TradeState)
 
 	expected := TestConnection{}
-	expected.broadcast(NewGameStateChangedMessage(TradeState))
+	expected.Broadcast(NewGameStateChangedMessage(TradeState))
 
 	if diff := CompareBroadcastLog(connection, expected); diff != "" {
 		t.Errorf("ChangeState(WaitingState): %v", diff)
@@ -70,8 +70,8 @@ func TestAuctionStart(t *testing.T) {
 
 	rand.Seed(1)
 	expected := TestConnection{}
-	expected.broadcast(NewGameStateChangedMessage(AuctionState))
-	expected.broadcast(NewAuctionSeedMessage(rand.Int()))
+	expected.Broadcast(NewGameStateChangedMessage(AuctionState))
+	expected.Broadcast(NewAuctionSeedMessage(rand.Int()))
 
 	if diff := CompareBroadcastLog(connection, expected); diff != "" {
 		t.Errorf("ChangeState(WaitingState): %v", diff)
@@ -175,11 +175,11 @@ func TestAuctionPhases(t *testing.T) {
 
 	rand.Seed(1)
 	expected := TestConnection{}
-	expected.broadcast(NewGameStateChangedMessage(AuctionState))
-	expected.broadcast(NewAuctionSeedMessage(rand.Int()))
-	expected.broadcast(NewAuctionSeedMessage(rand.Int()))
-	expected.broadcast(NewAuctionSeedMessage(rand.Int()))
-	expected.broadcast(NewGameStateChangedMessage(TradeState))
+	expected.Broadcast(NewGameStateChangedMessage(AuctionState))
+	expected.Broadcast(NewAuctionSeedMessage(rand.Int()))
+	expected.Broadcast(NewAuctionSeedMessage(rand.Int()))
+	expected.Broadcast(NewAuctionSeedMessage(rand.Int()))
+	expected.Broadcast(NewGameStateChangedMessage(TradeState))
 
 	if diff := CompareBroadcastLog(connection, expected); diff != "" {
 		t.Errorf("ChangeState(WaitingState): %v", diff)

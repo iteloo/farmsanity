@@ -1,18 +1,22 @@
 package main
 
+import (
+	"time"
+)
+
 type User interface {
 	Message(message Message) error
 }
 
 type GameConnection interface {
-	broadcast(message Message) error
+	Broadcast(message Message) error
 }
 
 type Game struct {
 	connection  GameConnection
 	state       StateController
-	nextTimeout int64
-	tick        int64
+	nextTimeout time.Duration
+	tick        time.Duration
 }
 
 func NewGame(connection GameConnection) *Game {
@@ -25,15 +29,15 @@ func NewGame(connection GameConnection) *Game {
 	return &game
 }
 
-func (g *Game) SetTimeout(duration int64) {
+func (g *Game) SetTimeout(duration time.Duration) {
 	g.nextTimeout = g.tick + duration
 }
 
-func (g *Game) GetTime() int64 {
+func (g *Game) GetTime() time.Duration {
 	return g.tick
 }
 
-func (g *Game) Tick(time int64) {
+func (g *Game) Tick(time time.Duration) {
 	g.tick = time
 
 	// If a timer is currently set, notify the state controller.
@@ -53,7 +57,7 @@ func (g *Game) ChangeState(newState GameState) {
 	// Clean up any timers that are currently running
 	g.nextTimeout = 0
 
-	g.connection.broadcast(NewGameStateChangedMessage(newState))
+	g.connection.Broadcast(NewGameStateChangedMessage(newState))
 	g.state = NewStateController(g, newState)
 	g.state.Begin()
 }

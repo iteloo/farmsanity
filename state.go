@@ -2,6 +2,7 @@ package main
 
 import (
 	"math/rand"
+	"time"
 )
 
 type GameState string
@@ -14,9 +15,9 @@ const (
 )
 
 const (
-	AuctionBidTime   int64 = 100
-	TradeTimeout     int64 = 100
-	TradingStageTime int64 = 1000
+	AuctionBidTime   time.Duration = 30 * time.Second
+	TradeTimeout     time.Duration = 100 * time.Millisecond
+	TradingStageTime time.Duration = 120 * time.Second
 
 	MinPlayers int = 2
 )
@@ -25,7 +26,7 @@ type StateController interface {
 	Name() GameState
 	Begin()
 	End()
-	Timer(tick int64)
+	Timer(tick time.Duration)
 	RecieveMessage(User, Message)
 }
 
@@ -42,10 +43,10 @@ func NewWaitingController(game *Game) *WaitingController {
 		ready: map[User]bool{},
 	}
 }
-func (s *WaitingController) Name() GameState  { return s.name }
-func (s *WaitingController) Begin()           {}
-func (s *WaitingController) End()             {}
-func (s *WaitingController) Timer(tick int64) {}
+func (s *WaitingController) Name() GameState          { return s.name }
+func (s *WaitingController) Begin()                   {}
+func (s *WaitingController) End()                     {}
+func (s *WaitingController) Timer(tick time.Duration) {}
 func (s *WaitingController) RecieveMessage(u User, m Message) {
 	switch m.(type) {
 	case ReadyMessage:
@@ -85,7 +86,7 @@ func NewProductionController(game *Game) *ProductionController {
 func (s *ProductionController) Name() GameState                  { return s.name }
 func (s *ProductionController) Begin()                           {}
 func (s *ProductionController) End()                             {}
-func (s *ProductionController) Timer(tick int64)                 {}
+func (s *ProductionController) Timer(tick time.Duration)         {}
 func (s *ProductionController) RecieveMessage(u User, m Message) {}
 
 type AuctionController struct {
@@ -113,7 +114,7 @@ func (s *AuctionController) issueCard() {
 	// When the auction begins, we need to choose a random number and broadcast
 	// it to the participants.
 	seed := rand.Int()
-	s.game.connection.broadcast(
+	s.game.connection.Broadcast(
 		NewAuctionSeedMessage(seed),
 	)
 
@@ -125,7 +126,7 @@ func (s *AuctionController) End() {}
 
 // The timer is only used to determine when the auction is over. So when we get
 // this call, the current auction is over.
-func (s *AuctionController) Timer(tick int64) {
+func (s *AuctionController) Timer(tick time.Duration) {
 	if s.winner != nil {
 		s.winner.Message(NewAuctionWonMessage())
 	}
@@ -162,7 +163,7 @@ type TradeController struct {
 	game            *Game
 	stagedMaterials string
 	stagedUser      User
-	stagingTime     int64
+	stagingTime     time.Duration
 }
 
 func NewTradeController(game *Game) *TradeController {
@@ -179,7 +180,7 @@ func (s *TradeController) Begin() {
 	s.game.SetTimeout(TradingStageTime)
 }
 
-func (s *TradeController) Timer(tick int64) {
+func (s *TradeController) Timer(tick time.Duration) {
 	// The stage is over, so begin the next stage.
 	s.game.ChangeState(ProductionState)
 }

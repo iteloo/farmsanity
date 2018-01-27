@@ -1,5 +1,10 @@
 package main
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 type MessageAction string
 
 const (
@@ -12,13 +17,11 @@ const (
 	TradeCompletedAction MessageAction = "trade_completed"
 
 	// Client messages
-	BidAction          MessageAction = "bid"
-	ReadyAction        MessageAction = "ready"
-	JoinAction         MessageAction = "join"
-	LeaveAction        MessageAction = "leave"
-	SaleAction         MessageAction = "join"
-	TradeAction        MessageAction = "trade"
-	ActivateCardAction MessageAction = "activate_card"
+	BidAction   MessageAction = "bid"
+	ReadyAction MessageAction = "ready"
+	JoinAction  MessageAction = "join"
+	LeaveAction MessageAction = "leave"
+	TradeAction MessageAction = "trade"
 )
 
 type Message interface{}
@@ -27,8 +30,8 @@ type MessageInterface struct {
 	message interface{}
 }
 
-func NewMessage(message interface{}) Message {
-	return MessageInterface{message}
+type BasicMessage struct {
+	Action string `json:"action"`
 }
 
 // Messages broadcast by the server.
@@ -122,4 +125,58 @@ func NewTradeMessage(materials string) Message {
 		Action:    string(TradeAction),
 		Materials: materials,
 	}
+}
+
+func DecodeMessage(data []byte) (Message, error) {
+	msg := BasicMessage{}
+	if err := json.Unmarshal(data, &msg); err != nil {
+		return nil, fmt.Errorf("Unable to decode message: %q", data)
+	}
+
+	// Now that we know the type of the message (based on the action)
+	// we can decode it properly.
+	var message Message
+	var err error
+	switch msg.Action {
+	case string(GameStateChangedAction):
+		m := GameStateChangedMessage{}
+		err = json.Unmarshal(data, &m)
+		message = m
+	case string(AuctionSeedAction):
+		m := AuctionSeedMessage{}
+		err = json.Unmarshal(data, &m)
+		message = m
+	case string(AuctionWonAction):
+		m := AuctionWonMessage{}
+		err = json.Unmarshal(data, &m)
+		message = m
+	case string(TradeCompletedAction):
+		m := TradeCompletedMessage{}
+		err = json.Unmarshal(data, &m)
+		message = m
+	case string(BidAction):
+		m := BidMessage{}
+		err = json.Unmarshal(data, &m)
+		message = m
+	case string(ReadyAction):
+		m := ReadyMessage{}
+		err = json.Unmarshal(data, &m)
+		message = m
+	case string(JoinAction):
+		m := JoinMessage{}
+		err = json.Unmarshal(data, &m)
+		message = m
+	case string(LeaveAction):
+		m := LeaveMessage{}
+		err = json.Unmarshal(data, &m)
+		message = m
+	case string(TradeAction):
+		m := TradeMessage{}
+		err = json.Unmarshal(data, &m)
+		message = m
+	default:
+		err = fmt.Errorf("Unknown action: %v", msg.Action)
+	}
+
+	return message, err
 }
