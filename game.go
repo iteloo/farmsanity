@@ -29,6 +29,10 @@ func (g *Game) SetTimeout(duration int64) {
 	g.nextTimeout = g.tick + duration
 }
 
+func (g *Game) GetTime() int64 {
+	return g.tick
+}
+
 func (g *Game) Tick(time int64) {
 	g.tick = time
 

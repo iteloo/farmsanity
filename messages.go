@@ -8,7 +8,8 @@ const (
 	AuctionSeedAction      MessageAction = "auction_seed"
 
 	// Server-to-client messages
-	AuctionWonAction MessageAction = "auction_won"
+	AuctionWonAction     MessageAction = "auction_won"
+	TradeCompletedAction MessageAction = "trade_completed"
 
 	// Client messages
 	BidAction          MessageAction = "bid"
@@ -55,6 +56,15 @@ func NewAuctionSeedMessage(seed int) Message {
 	}
 }
 
+type TradeCompletedMessage struct {
+	Action    string `json:"action"`
+	Materials string `json:"materials"`
+}
+
+func NewTradeCompletedMessage(materials string) Message {
+	return TradeCompletedMessage{string(TradeCompletedAction), materials}
+}
+
 // Client messages
 
 type BidMessage struct {
@@ -75,4 +85,16 @@ type AuctionWonMessage struct {
 
 func NewAuctionWonMessage() Message {
 	return AuctionWonMessage{string(AuctionWonAction)}
+}
+
+type TradeMessage struct {
+	Action    string `json:"action"`
+	Materials string `json:"materials"`
+}
+
+func NewTradeMessage(materials string) Message {
+	return TradeMessage{
+		Action:    string(TradeAction),
+		Materials: materials,
+	}
 }

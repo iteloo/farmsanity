@@ -15,6 +15,7 @@ const (
 
 const (
 	AuctionBidTime int64 = 100
+	TradeTimeout   int64 = 100
 )
 
 type StateController interface {
@@ -125,19 +126,45 @@ func (s *AuctionController) RecieveMessage(u User, m Message) {
 }
 
 type TradeController struct {
-	name GameState
+	name            GameState
+	game            *Game
+	stagedMaterials string
+	stagedUser      User
+	stagingTime     int64
 }
 
 func NewTradeController(game *Game) *TradeController {
 	return &TradeController{
 		name: TradeState,
+		game: game,
 	}
 }
-func (s *TradeController) Name() GameState                  { return s.name }
-func (s *TradeController) Begin()                           {}
-func (s *TradeController) End()                             {}
-func (s *TradeController) RecieveMessage(u User, m Message) {}
-func (s *TradeController) Timer(tick int64)                 {}
+func (s *TradeController) Name() GameState { return s.name }
+func (s *TradeController) Begin()          {}
+func (s *TradeController) End()            {}
+func (s *TradeController) RecieveMessage(u User, m Message) {
+	switch msg := m.(type) {
+	case TradeMessage:
+		isntSelfTrade := s.stagedUser != u
+		withinTimeInterval := s.game.GetTime()-s.stagingTime < TradeTimeout
+		if isntSelfTrade && s.stagedUser != nil && withinTimeInterval {
+			// Execute the currently proposed trade.
+			s.stagedUser.Message(NewTradeCompletedMessage(msg.Materials))
+			u.Message(NewTradeCompletedMessage(s.stagedMaterials))
+
+			// Reset the staged materials
+			s.stagedUser = nil
+			s.stagingTime = 0
+			s.stagedMaterials = ""
+		} else {
+			s.stagedUser = u
+			s.stagingTime = s.game.GetTime()
+			s.stagedMaterials = msg.Materials
+		}
+	}
+}
+
+func (s *TradeController) Timer(tick int64) {}
 
 func NewStateController(game *Game, state GameState) StateController {
 	switch state {

@@ -55,3 +55,77 @@ func TestAuctionTimeout(t *testing.T) {
 			user.messageLog, want.messageLog, diff)
 	}
 }
+
+func TestTradeMechanism(t *testing.T) {
+	connection := TestConnection{}
+	game := NewGame(&connection)
+	ctrl := NewTradeController(game)
+	game.state = ctrl
+
+	userA := &TestUser{}
+	userB := &TestUser{}
+	ctrl.RecieveMessage(userA, NewTradeMessage("a gold bar"))
+	ctrl.RecieveMessage(userB, NewTradeMessage("a ham sandwich"))
+
+	// Expect the users to exchange messages.
+	wantA := &TestUser{}
+	wantA.Message(NewTradeCompletedMessage("a ham sandwich"))
+	wantB := &TestUser{}
+	wantB.Message(NewTradeCompletedMessage("a gold bar"))
+
+	if diff := CompareMessageLog(userA, wantA); diff != "" {
+		t.Errorf("TradeMessage: %q, %q, diff: %v",
+			userA.messageLog, wantA.messageLog, diff)
+	}
+
+	if diff := CompareMessageLog(userB, wantB); diff != "" {
+		t.Errorf("TradeMessage: %q, %q, diff: %v",
+			userB.messageLog, wantB.messageLog, diff)
+	}
+
+	// Subsequent trade is too slow and fails to complete.
+	userC := &TestUser{}
+	userD := &TestUser{}
+	ctrl.RecieveMessage(userC, NewTradeMessage("nothing"))
+
+	game.Tick(TradeTimeout * 2)
+
+	ctrl.RecieveMessage(userD, NewTradeMessage("something"))
+	wantC := &TestUser{}
+	wantD := &TestUser{}
+
+	if diff := CompareMessageLog(userC, wantC); diff != "" {
+		t.Errorf("TradeMessage: %q, %q, diff: %v",
+			userC.messageLog, wantC.messageLog, diff)
+	}
+	if diff := CompareMessageLog(userD, wantD); diff != "" {
+		t.Errorf("TradeMessage: %q, %q, diff: %v",
+			userD.messageLog, wantD.messageLog, diff)
+	}
+
+	game.Tick(TradeTimeout * 4)
+
+	userE := &TestUser{}
+	userF := &TestUser{}
+	ctrl.RecieveMessage(userE, NewTradeMessage("widget"))
+
+	// Short delay.
+	game.Tick(TradeTimeout*4 + 5)
+
+	ctrl.RecieveMessage(userF, NewTradeMessage("wodget"))
+
+	// Expect the users to exchange messages.
+	wantE := &TestUser{}
+	wantE.Message(NewTradeCompletedMessage("wodget"))
+	wantF := &TestUser{}
+	wantF.Message(NewTradeCompletedMessage("widget"))
+
+	if diff := CompareMessageLog(userE, wantE); diff != "" {
+		t.Errorf("TradeMessage: %q, %q, diff: %v",
+			userE.messageLog, wantE.messageLog, diff)
+	}
+	if diff := CompareMessageLog(userF, wantF); diff != "" {
+		t.Errorf("TradeMessage: %q, %q, diff: %v",
+			userF.messageLog, wantF.messageLog, diff)
+	}
+}
