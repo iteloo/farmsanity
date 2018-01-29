@@ -62,8 +62,12 @@ func (s *WaitingController) Name() GameState { return s.name }
 func (s *WaitingController) Begin() {}
 
 // End is called when the state is no longer active.
-func (s *WaitingController) End()                     {}
+func (s *WaitingController) End() {}
+
+// Timer is called when a timeout occurs.
 func (s *WaitingController) Timer(tick time.Duration) {}
+
+// RecieveMessage is called when a user sends a message to the server.
 func (s *WaitingController) RecieveMessage(u User, m Message) {
 	switch m.(type) {
 	case ReadyMessage:
@@ -117,6 +121,7 @@ func (s *ProductionController) Begin() {
 	s.game.SetTimeout(ProductionTimeout)
 }
 
+// Timer is called when the state ends, so just transition to the next state.
 func (s *ProductionController) Timer(tick time.Duration) {
 	s.game.ChangeState(AuctionState)
 }
@@ -161,7 +166,7 @@ func (s *AuctionController) issueCard() {
 // End is called when the state is no longer active.
 func (s *AuctionController) End() {}
 
-// The timer is only used to determine when the auction is over. So when we get
+// Timer is only used to determine when the auction is over. So when we get
 // this call, the current auction is over.
 func (s *AuctionController) Timer(tick time.Duration) {
 	if s.winner != nil {
@@ -221,13 +226,15 @@ func (s *TradeController) Begin() {
 	s.game.SetTimeout(TradingStageTime)
 }
 
+// Timer is called when the stage is over, so just begin next stage.
 func (s *TradeController) Timer(tick time.Duration) {
-	// The stage is over, so begin the next stage.
 	s.game.ChangeState(ProductionState)
 }
 
 // End is called when the state is no longer active.
 func (s *TradeController) End() {}
+
+// RecieveMessage is called when a user sends the server a message.
 func (s *TradeController) RecieveMessage(u User, m Message) {
 	switch msg := m.(type) {
 	case TradeMessage:
@@ -250,6 +257,7 @@ func (s *TradeController) RecieveMessage(u User, m Message) {
 	}
 }
 
+// NewStateController creates a state controller based on the requested state.
 func NewStateController(game *Game, state GameState) StateController {
 	switch state {
 	case WaitingState:

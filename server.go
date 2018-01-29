@@ -37,6 +37,7 @@ type Event struct {
 	Player  *Player
 }
 
+// NewEvent constructs an Event.
 func NewEvent(player *Player, message Message) Event {
 	return Event{
 		Player:  player,
@@ -63,10 +64,15 @@ func (s *GameServer) Broadcast(message Message) error {
 	return nil
 }
 
+// AddPlayer is called by the main thread to add a player to our game. In fact, it
+// queues a JoinMessage from this new player, which our game thread picks up.
 func (s *GameServer) AddPlayer(player Player) {
 	s.incomingMessages <- NewEvent(&player, NewJoinMessage())
 }
 
+// HandleCommunication is the main game loop which reads messages from players.
+// This thread is where all of the game state logic is called from, including
+// timer callbacks, etc.
 func (s *GameServer) HandleCommunication(player Player) {
 	// Send a join message as we arrive.
 	s.incomingMessages <- NewEvent(&player, NewJoinMessage())
@@ -90,6 +96,8 @@ func (s *GameServer) HandleCommunication(player Player) {
 	}
 }
 
+// HandleMessages is called on a new thread, once for each Player. It simply gets
+// messages from the Player and sends them over to the game thread to be handled.
 func (s *GameServer) HandleMessages() {
 	for {
 		event := <-s.incomingMessages
@@ -121,6 +129,7 @@ func (s *GameServer) HandleMessages() {
 	}
 }
 
+// RunClock is a dedicated thread which sends tick messages at the TickInterval.
 func (s *GameServer) RunClock() {
 	ticks := 0 * time.Second
 	for {
@@ -130,6 +139,8 @@ func (s *GameServer) RunClock() {
 	}
 }
 
+// NewGameServer constructs a game server object, initializes the threads which it
+// needs to handle messages and the game clock.
 func NewGameServer(name string) *GameServer {
 	g := GameServer{
 		game:             nil,

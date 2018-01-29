@@ -78,7 +78,7 @@ func TestAuctionStart(t *testing.T) {
 	}
 
 	if game.state.Name() != AuctionState {
-		t.Errorf("game.state.Name() = %v, want %v", game.state.Name, AuctionState)
+		t.Errorf("game.state.Name() = %v, want %v", game.state.Name(), AuctionState)
 	}
 }
 
