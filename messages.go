@@ -11,6 +11,7 @@ const (
 	// Server broadcast messages
 	GameStateChangedAction MessageAction = "game_state_changed"
 	AuctionSeedAction      MessageAction = "auction_seed"
+	WelcomeAction          MessageAction = "welcome"
 
 	// Server-to-client messages
 	AuctionWonAction     MessageAction = "auction_won"
@@ -67,6 +68,20 @@ type TradeCompletedMessage struct {
 
 func NewTradeCompletedMessage(materials string) Message {
 	return TradeCompletedMessage{string(TradeCompletedAction), materials}
+}
+
+type WelcomeMessage struct {
+	Action string `json:"action"`
+	Game   string `json:"game"`
+	State  string `json:"state"`
+}
+
+func NewWelcomeMessage(game, state string) Message {
+	return WelcomeMessage{
+		Action: string(WelcomeAction),
+		Game:   game,
+		State:  state,
+	}
 }
 
 // Client messages
@@ -144,6 +159,10 @@ func DecodeMessage(data []byte) (Message, error) {
 		message = m
 	case string(AuctionSeedAction):
 		m := AuctionSeedMessage{}
+		err = json.Unmarshal(data, &m)
+		message = m
+	case string(WelcomeAction):
+		m := WelcomeMessage{}
 		err = json.Unmarshal(data, &m)
 		message = m
 	case string(AuctionWonAction):

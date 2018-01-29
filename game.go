@@ -13,14 +13,16 @@ type GameConnection interface {
 }
 
 type Game struct {
+	name        string
 	connection  GameConnection
 	state       StateController
 	nextTimeout time.Duration
 	tick        time.Duration
 }
 
-func NewGame(connection GameConnection) *Game {
+func NewGame(name string, connection GameConnection) *Game {
 	game := Game{
+		name:       name,
 		connection: connection,
 		state:      nil,
 	}
@@ -48,6 +50,10 @@ func (g *Game) Tick(time time.Duration) {
 }
 
 func (g *Game) RecieveMessage(user User, message Message) {
+	switch message.(type) {
+	case JoinMessage:
+		user.Message(NewWelcomeMessage(g.name, string(g.state.Name())))
+	}
 	g.state.RecieveMessage(user, message)
 }
 

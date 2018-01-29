@@ -15,9 +15,10 @@ const (
 )
 
 const (
-	AuctionBidTime   time.Duration = 30 * time.Second
-	TradeTimeout     time.Duration = 100 * time.Millisecond
-	TradingStageTime time.Duration = 120 * time.Second
+	AuctionBidTime    time.Duration = 30 * time.Second
+	ProductionTimeout time.Duration = 30 * time.Second
+	TradeTimeout      time.Duration = 100 * time.Millisecond
+	TradingStageTime  time.Duration = 120 * time.Second
 
 	MinPlayers int = 2
 )
@@ -75,19 +76,30 @@ func (s *WaitingController) proceedIfReady() {
 }
 
 type ProductionController struct {
+	game *Game
 	name GameState
 }
 
 func NewProductionController(game *Game) *ProductionController {
 	return &ProductionController{
+		game: game,
 		name: ProductionState,
 	}
 }
+
 func (s *ProductionController) Name() GameState                  { return s.name }
-func (s *ProductionController) Begin()                           {}
 func (s *ProductionController) End()                             {}
-func (s *ProductionController) Timer(tick time.Duration)         {}
 func (s *ProductionController) RecieveMessage(u User, m Message) {}
+
+// The production stage is timed, so we should move to the next stage after the time
+// interval.
+func (s *ProductionController) Begin() {
+	s.game.SetTimeout(ProductionTimeout)
+}
+
+func (s *ProductionController) Timer(tick time.Duration) {
+	s.game.ChangeState(AuctionState)
+}
 
 type AuctionController struct {
 	name   GameState
@@ -210,7 +222,6 @@ func (s *TradeController) RecieveMessage(u User, m Message) {
 
 func NewStateController(game *Game, state GameState) StateController {
 	switch state {
-
 	case WaitingState:
 		return NewWaitingController(game)
 	case ProductionState:

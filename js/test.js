@@ -79,11 +79,11 @@ TEST_DATA = [ {
   ],
   "output" : {
     "colin" : [
-      {"action" : "welcome", "game" : "check_game_ready"},
+      {"action" : "welcome", "game" : "check_game_ready", "state" : "waiting"},
       {"action" : "game_state_changed", "new_state" : "production"}
     ],
     "leo" : [
-      {"action" : "welcome", "game" : "check_game_ready"},
+      {"action" : "welcome", "game" : "check_game_ready", "state" : "waiting"},
       {"action" : "game_state_changed", "new_state" : "production"}
     ]
   }

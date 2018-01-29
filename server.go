@@ -38,7 +38,6 @@ func NewEvent(player *Player, message Message) Event {
 
 type GameServer struct {
 	players          []Player
-	Name             string
 	game             *Game
 	incomingMessages chan Event
 }
@@ -68,7 +67,7 @@ func (s *GameServer) AddPlayer(player Player) {
 
 func (s *GameServer) HandleCommunication(player Player) {
 	// Send a join message as we arrive.
-	s.incomingMessages <- NewEvent(&player, NewJoinMessage)
+	s.incomingMessages <- NewEvent(&player, NewJoinMessage())
 
 	for {
 		t, data, err := player.Connection.ReadMessage()
@@ -131,11 +130,10 @@ func (s *GameServer) RunClock() {
 
 func NewGameServer(name string) *GameServer {
 	g := GameServer{
-		Name:             name,
 		game:             nil,
 		incomingMessages: make(chan Event),
 	}
-	g.game = NewGame(&g)
+	g.game = NewGame(name, &g)
 
 	go g.HandleMessages()
 	go g.RunClock()

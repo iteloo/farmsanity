@@ -46,7 +46,7 @@ func CompareMessageLog(got, want *TestUser) string {
 
 func TestChangeState(t *testing.T) {
 	connection := TestConnection{}
-	game := NewGame(&connection)
+	game := NewGame("g", &connection)
 	game.ChangeState(TradeState)
 
 	expected := TestConnection{}
@@ -65,7 +65,7 @@ func TestAuctionStart(t *testing.T) {
 	// Need to set the random seed to force deterministic behavior.
 	rand.Seed(1)
 	connection := TestConnection{}
-	game := NewGame(&connection)
+	game := NewGame("g", &connection)
 	game.ChangeState(AuctionState)
 
 	rand.Seed(1)
@@ -84,7 +84,7 @@ func TestAuctionStart(t *testing.T) {
 
 func TestReadyMechanism(t *testing.T) {
 	connection := TestConnection{}
-	game := NewGame(&connection)
+	game := NewGame("g", &connection)
 
 	userA := &TestUser{}
 	userB := &TestUser{}
@@ -110,7 +110,7 @@ func TestReadyMechanism(t *testing.T) {
 
 func TestReadyMechanismWithMorePlayers(t *testing.T) {
 	connection := TestConnection{}
-	game := NewGame(&connection)
+	game := NewGame("g", &connection)
 
 	userA := &TestUser{}
 	userB := &TestUser{}
@@ -132,7 +132,7 @@ func TestReadyMechanismWithMorePlayers(t *testing.T) {
 
 func TestReadyMechanismWithLeaver(t *testing.T) {
 	connection := TestConnection{}
-	game := NewGame(&connection)
+	game := NewGame("g", &connection)
 
 	userA := &TestUser{}
 	userB := &TestUser{}
@@ -157,7 +157,7 @@ func TestAuctionPhases(t *testing.T) {
 	// Need to set the random seed to force deterministic behavior.
 	rand.Seed(1)
 	connection := TestConnection{}
-	game := NewGame(&connection)
+	game := NewGame("g", &connection)
 	game.ChangeState(AuctionState)
 
 	// Bid on a card.
