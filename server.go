@@ -8,22 +8,30 @@ import (
 )
 
 const (
+	// TickInterval is the nominal time between ticks. All timing is done in
+	// increments of the TickInterval. It's kind of like the frame rate.
 	TickInterval time.Duration = 300 * time.Millisecond
 )
 
+// Player is an implementation of User with websockets.
 type Player struct {
 	Name       string
 	Connection *websocket.Conn
 }
 
+// Message sends a player a message.
 func (p *Player) Message(message Message) error {
 	return p.Connection.WriteJSON(message)
 }
 
+// GenerateGameName generates a random name for the game, in case
+// the user didn't specify one when they connected.
 func GenerateGameName() string {
 	return "test"
 }
 
+// An Event is a combination of a Message and the Player who originated the
+// message.
 type Event struct {
 	Message Message
 	Player  *Player
@@ -36,12 +44,14 @@ func NewEvent(player *Player, message Message) Event {
 	}
 }
 
+// A GameServer is an instance of a GameConnection.
 type GameServer struct {
 	players          []Player
 	game             *Game
 	incomingMessages chan Event
 }
 
+// Broadcast sends a message to every Player.
 func (s *GameServer) Broadcast(message Message) error {
 	log.Printf("Broadcast: %v", message)
 	for _, p := range s.players {
@@ -51,14 +61,6 @@ func (s *GameServer) Broadcast(message Message) error {
 		}
 	}
 	return nil
-}
-
-type PlayerMessage struct {
-	Player Player
-}
-
-type TickMessage struct {
-	Tick time.Duration
 }
 
 func (s *GameServer) AddPlayer(player Player) {
@@ -93,7 +95,7 @@ func (s *GameServer) HandleMessages() {
 		event := <-s.incomingMessages
 		switch msg := event.Message.(type) {
 		case TickMessage:
-			s.game.Tick(msg.Tick)
+			s.game.Tick(time.Duration(msg.Tick) * time.Millisecond)
 		case JoinMessage:
 			new := true
 			for _, x := range s.players {
@@ -124,7 +126,7 @@ func (s *GameServer) RunClock() {
 	for {
 		time.Sleep(TickInterval)
 		ticks += TickInterval
-		s.incomingMessages <- NewEvent(nil, TickMessage{ticks})
+		s.incomingMessages <- NewEvent(nil, NewTickMessage(ticks))
 	}
 }
 

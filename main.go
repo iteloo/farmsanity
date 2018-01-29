@@ -7,6 +7,8 @@ import (
 )
 
 var (
+	// AllGames is a map of all the games currently in progress.
+	// The key is the name of the game.
 	AllGames map[string]*GameServer
 )
 

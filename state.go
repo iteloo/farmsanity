@@ -15,11 +15,21 @@ const (
 )
 
 const (
-	AuctionBidTime    time.Duration = 30 * time.Second
+	// AuctionBidTime specifies the amount of time after the last bid is
+	// placed that the auction will expire.
+	AuctionBidTime time.Duration = 30 * time.Second
+	// ProductionTimeout is how long the production phase will last before
+	// the next phase begins.
 	ProductionTimeout time.Duration = 30 * time.Second
-	TradeTimeout      time.Duration = 100 * time.Millisecond
-	TradingStageTime  time.Duration = 120 * time.Second
+	// TradeTimeout specifies how long a trade can hang without a
+	// counterpart before it is cancelled.
+	TradeTimeout time.Duration = 100 * time.Millisecond
+	// TradingStageTime is how long the production phase will last before
+	// the next phase begins.
+	TradingStageTime time.Duration = 120 * time.Second
 
+	// MinPlayers sets the minimum number of players required before the game
+	// will proceed past the Waiting stage.
 	MinPlayers int = 2
 )
 
@@ -44,8 +54,14 @@ func NewWaitingController(game *Game) *WaitingController {
 		ready: map[User]bool{},
 	}
 }
-func (s *WaitingController) Name() GameState          { return s.name }
-func (s *WaitingController) Begin()                   {}
+
+// Name returns the name of the current state.
+func (s *WaitingController) Name() GameState { return s.name }
+
+// Begin is called when the state becomes active.
+func (s *WaitingController) Begin() {}
+
+// End is called when the state is no longer active.
 func (s *WaitingController) End()                     {}
 func (s *WaitingController) Timer(tick time.Duration) {}
 func (s *WaitingController) RecieveMessage(u User, m Message) {
@@ -67,7 +83,7 @@ func (s *WaitingController) proceedIfReady() {
 		if !v {
 			return
 		}
-		count += 1
+		count++
 	}
 
 	if count >= MinPlayers {
@@ -87,13 +103,17 @@ func NewProductionController(game *Game) *ProductionController {
 	}
 }
 
-func (s *ProductionController) Name() GameState                  { return s.name }
+// Name returns the name of the current state.
+func (s *ProductionController) Name() GameState { return s.name }
+
+// End is called when the state is no longer active.
 func (s *ProductionController) End()                             {}
 func (s *ProductionController) RecieveMessage(u User, m Message) {}
 
-// The production stage is timed, so we should move to the next stage after the time
-// interval.
+// Begin is called when the state becomes active.
 func (s *ProductionController) Begin() {
+	// The production stage is timed, so we should move to the next stage
+	// after the time interval.
 	s.game.SetTimeout(ProductionTimeout)
 }
 
@@ -117,7 +137,11 @@ func NewAuctionController(game *Game) *AuctionController {
 		steps: 3,
 	}
 }
+
+// Name returns the name of the current state.
 func (s *AuctionController) Name() GameState { return s.name }
+
+// Begin is called when the state becomes active.
 func (s *AuctionController) Begin() {
 	s.issueCard()
 }
@@ -134,6 +158,7 @@ func (s *AuctionController) issueCard() {
 	s.game.SetTimeout(AuctionBidTime)
 }
 
+// End is called when the state is no longer active.
 func (s *AuctionController) End() {}
 
 // The timer is only used to determine when the auction is over. So when we get
@@ -147,8 +172,7 @@ func (s *AuctionController) Timer(tick time.Duration) {
 	s.bid = 0
 	s.winner = nil
 
-	s.step += 1
-
+	s.step++
 	if s.step == s.steps {
 		// We've reached the end of the auction process. So let's change
 		// phases. The TradeState is next.
@@ -159,6 +183,7 @@ func (s *AuctionController) Timer(tick time.Duration) {
 	}
 }
 
+// RecieveMessage is called when a new message is sent by a user.
 func (s *AuctionController) RecieveMessage(u User, m Message) {
 	switch msg := m.(type) {
 	case BidMessage:
@@ -170,6 +195,7 @@ func (s *AuctionController) RecieveMessage(u User, m Message) {
 	}
 }
 
+// TradeController manages the state of the game during trading.
 type TradeController struct {
 	name            GameState
 	game            *Game
@@ -178,6 +204,7 @@ type TradeController struct {
 	stagingTime     time.Duration
 }
 
+// NewTradeController creates a TradeController instance.
 func NewTradeController(game *Game) *TradeController {
 	return &TradeController{
 		name: TradeState,
@@ -185,8 +212,10 @@ func NewTradeController(game *Game) *TradeController {
 	}
 }
 
+// Name returns the name of the current state.
 func (s *TradeController) Name() GameState { return s.name }
 
+// Begin is called when the state becomes active.
 func (s *TradeController) Begin() {
 	// The trading stage ends after a certain time.
 	s.game.SetTimeout(TradingStageTime)
@@ -197,6 +226,7 @@ func (s *TradeController) Timer(tick time.Duration) {
 	s.game.ChangeState(ProductionState)
 }
 
+// End is called when the state is no longer active.
 func (s *TradeController) End() {}
 func (s *TradeController) RecieveMessage(u User, m Message) {
 	switch msg := m.(type) {

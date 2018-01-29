@@ -3,8 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 )
 
+// MessageAction is the string used in the `action` field
+// within the JSON of the message. Each message has a unique
+// action string.
 type MessageAction string
 
 const (
@@ -23,16 +27,35 @@ const (
 	JoinAction  MessageAction = "join"
 	LeaveAction MessageAction = "leave"
 	TradeAction MessageAction = "trade"
+
+	// Special debug-only actions
+	TickAction MessageAction = "tick"
 )
 
+// A Message is an object which must contain an Action string, serializable
+// to the MessageAction, and may also contain other JSON serializable fields.
 type Message interface{}
 
-type MessageInterface struct {
-	message interface{}
-}
-
+// BasicMessage is a dummy message. All JSON messages sent or recieved by the
+// server should be deserializable into this message type. This allows us to
+// read the Action string without knowing the internal structure of the
+// message.
 type BasicMessage struct {
 	Action string `json:"action"`
+}
+
+// TickMessage is sent to increment the current game clock. Users shouldn't send
+// this message, it is only generated internally.
+type TickMessage struct {
+	Action string  `json:"action"`
+	Tick   float64 `json:"tick_ms"`
+}
+
+func NewTickMessage(tick time.Duration) TickMessage {
+	return TickMessage{
+		Action: string(TickAction),
+		Tick:   float64(tick / time.Millisecond),
+	}
 }
 
 // Messages broadcast by the server.
@@ -142,14 +165,16 @@ func NewTradeMessage(materials string) Message {
 	}
 }
 
+// DecodeMessage takes data in bytes, determines which message it corresponds
+// to, and decodes it to the appropriate type.
 func DecodeMessage(data []byte) (Message, error) {
 	msg := BasicMessage{}
 	if err := json.Unmarshal(data, &msg); err != nil {
 		return nil, fmt.Errorf("Unable to decode message: %q", data)
 	}
 
-	// Now that we know the type of the message (based on the action)
-	// we can decode it properly.
+	// Now that we know the type of the message (based on the action) we
+	// can decode it properly.
 	var message Message
 	var err error
 	switch msg.Action {
@@ -191,6 +216,10 @@ func DecodeMessage(data []byte) (Message, error) {
 		message = m
 	case string(TradeAction):
 		m := TradeMessage{}
+		err = json.Unmarshal(data, &m)
+		message = m
+	case string(TickAction):
+		m := TickMessage{}
 		err = json.Unmarshal(data, &m)
 		message = m
 	default:
