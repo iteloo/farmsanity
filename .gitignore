@@ -16,5 +16,8 @@
 # Vim swap files.
 *.swp
 
+js/node_modules
+js/package-lock.json
+
 # Binary output from go build
 mushunew
