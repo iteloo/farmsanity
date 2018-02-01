@@ -19,5 +19,10 @@
 js/node_modules
 js/package-lock.json
 
+# elm-package generated files
+elm-stuff
+# elm-repl generated files
+repl-temp-*
+
 # Binary output from go build
 mushunew
