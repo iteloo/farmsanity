@@ -38,13 +38,14 @@ type Msg
     = Input String
     | Send
     | NewMessage String
+    | NewPosition Float Float
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg { input, messages } =
+update msg model =
     case msg of
         Input newInput ->
-            ( Model newInput messages, Cmd.none )
+            ( { model | input = newInput }, Cmd.none )
 
         Send ->
             ( Model "" messages
@@ -63,7 +64,7 @@ update msg { input, messages } =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    WebSocket.listen "ws://localhost:8000/join?name=Leo" NewMessage
+    WebSocket.listen "ws://localhost:8080/join?name=Leo" NewMessage
 
 
 
