@@ -5,12 +5,11 @@ import Json.Decode as D
 import Json.Encode as E
 
 
-
 type Action
     = GameStateChanged StageType
     | Auction CardSeed
-    | AuctionWinnerUpdated String
-    | CardGranted CardSeed
+    | BidUpdated Int String
+    | AuctionWon
     | PriceUpdated Price
     | SaleCompleted Int Fruit Float
     | MaterialReceived (Material Int)
@@ -54,17 +53,23 @@ actionHelp a =
             D.map Auction <|
                 D.field "seed" D.int
 
-        "auction_winner_updated" ->
-            D.map AuctionWinnerUpdated <|
-                D.field "winner" D.string
+        "bid_updated" ->
+            D.map2 BidUpdated
+                (D.field "bid" D.int)
+                (D.field "winner" D.string)
 
-        "card_granted" ->
-            D.map CardGranted <|
-                D.field "seed" D.int
+        "auction_won" ->
+            D.succeed AuctionWon
 
         "price_updated" ->
             D.map PriceUpdated <|
                 D.field "new_prices" price
+
+        "sale_completed" ->
+            D.map3 SaleCompleted
+                (D.field "quantiy" D.int)
+                (D.field "type" fruit)
+                (D.field "price" D.float)
 
         "material_received" ->
             D.map MaterialReceived <|
@@ -76,6 +81,20 @@ actionHelp a =
 
         _ ->
             D.fail ("Received unrecognized action from server: " ++ a)
+
+
+fruit : D.Decoder Fruit
+fruit =
+    D.string
+        |> D.andThen
+            (\s ->
+                case fruitFromString s of
+                    Just fruit ->
+                        D.succeed fruit
+
+                    Nothing ->
+                        D.fail "Unrecognized fruit name"
+            )
 
 
 price : D.Decoder Price
