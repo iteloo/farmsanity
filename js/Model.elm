@@ -68,5 +68,7 @@ initAuctionModel =
     { card = Nothing
     , winner = Nothing
     , highBid = Nothing
-    , clock = 60 {- [tmp] bogus value -}
+    , clock = 60
+
+    {- [tmp] bogus value -}
     }
