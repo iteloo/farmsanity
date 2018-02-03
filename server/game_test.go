@@ -55,6 +55,7 @@ func TestChangeState(t *testing.T) {
 
 	expected := TestConnection{}
 	expected.Broadcast(NewGameStateChangedMessage(TradeState))
+	expected.Broadcast(NewPriceUpdatedMessage(game.Market))
 
 	if diff := CompareBroadcastLog(connection, expected); diff != "" {
 		t.Errorf("ChangeState(WaitingState): %v", diff)
@@ -185,6 +186,7 @@ func TestAuctionPhases(t *testing.T) {
 	expected.Broadcast(NewAuctionSeedMessage(rand.Int()))
 	expected.Broadcast(NewAuctionSeedMessage(rand.Int()))
 	expected.Broadcast(NewGameStateChangedMessage(TradeState))
+	expected.Broadcast(NewPriceUpdatedMessage(game.Market))
 
 	if diff := CompareBroadcastLog(connection, expected); diff != "" {
 		t.Errorf("ChangeState(WaitingState): %v", diff)
