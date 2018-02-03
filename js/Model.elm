@@ -1,14 +1,14 @@
 module Model exposing (..)
 
-import Api
+import BaseType exposing (..)
 
 
 type alias Model =
     { stage : Stage
-    , inventory : Maybe (Api.Material Int)
-    , factories : Api.Material Int
+    , inventory : Maybe (Material Int)
+    , factories : Material Int
     , cards : List Card
-    , price : Maybe Api.Price
+    , price : Maybe Price
     , input : String
     , messages : List String
     , inventoryVisible : Bool
@@ -45,16 +45,16 @@ type alias AuctionModel =
     }
 
 
-type alias Card =
-    { name : String
-    , startingBid : Int
-    }
-
-
-blueberryJam : Card
-blueberryJam =
-    { name = "Blueberry Jam"
-    , startingBid = 3
+initModel : Model
+initModel =
+    { stage = ReadyStage initReadyModel
+    , inventory = Nothing
+    , factories = emptyMaterial
+    , cards = []
+    , price = Nothing
+    , input = ""
+    , messages = []
+    , inventoryVisible = False
     }
 
 
