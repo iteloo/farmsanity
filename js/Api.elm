@@ -7,10 +7,10 @@ import Json.Encode as E
 
 type Action
     = GameStateChanged StageType
+    | Welcome
     | Auction CardSeed
     | BidUpdated Int String
     | AuctionWon
-    | Welcome
     | PriceUpdated Price
     | SaleCompleted Int Fruit Float
     | MaterialReceived (Material Int)
