@@ -57,7 +57,7 @@ type alias TradeModel =
 initModel : Model
 initModel =
     { stage = ReadyStage initReadyModel
-    , gold = 0
+    , gold = 25
     , inventory = Just emptyMaterial
     , factories = emptyMaterial
     , cards = []
