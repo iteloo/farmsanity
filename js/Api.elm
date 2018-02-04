@@ -51,6 +51,9 @@ actionHelp a =
                                 "auction" ->
                                     D.succeed AuctionStageType
 
+                                "trade" ->
+                                    D.succeed TradeStageType
+
                                 _ ->
                                     D.fail "Unrecognized stage name"
                         )
