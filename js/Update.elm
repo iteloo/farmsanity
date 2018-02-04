@@ -190,6 +190,9 @@ handleAction action model =
                     , Cmd.none
                     )
 
+        Api.Welcome ->
+            ( model, Cmd.none )
+
         Api.AuctionWon ->
             {- display "You Won!" message -}
             updateIfAuction model <|
