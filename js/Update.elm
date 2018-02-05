@@ -44,6 +44,9 @@ update msg model =
                     , Server.send model Api.Ready
                     )
 
+                NameInputChange name ->
+                    ( { model | name = name }, Server.send model (Api.SetName name) )
+
         ProductionMsg msg ->
             tryUpdateProduction model (updateProduction msg)
 

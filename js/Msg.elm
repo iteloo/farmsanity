@@ -18,6 +18,7 @@ type Msg
 
 type ReadyMsg
     = Ready
+    | NameInputChange String
 
 
 type TradeMsg

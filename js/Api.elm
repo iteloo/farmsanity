@@ -146,6 +146,7 @@ type ServerAction
     = JoinGame String
     | Ready
     | Bid Int
+    | SetName String
     | Sell Fruit Int
     | Trade (Material Int)
     | ActivateCard CardSeed
@@ -175,6 +176,9 @@ encodeServerAction a =
                     , [ ( "amount", E.int x )
                       ]
                     )
+
+                SetName name ->
+                    ( "set_name", [ ( "name", E.string name ) ] )
 
                 Sell type_ quantity ->
                     ( "sell"
