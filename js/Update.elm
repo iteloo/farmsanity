@@ -4,21 +4,16 @@ import BaseType exposing (..)
 import Model exposing (..)
 import Msg exposing (..)
 import Api
-import WebSocket
 import AnimationFrame
 import Time exposing (Time)
 import Debug
-
-
-wsUrl : String
-wsUrl =
-    "ws://localhost:8080/join?name=Leo"
+import Server
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ WebSocket.listen wsUrl ServerMsgReceived
+        [ Server.listen model ServerMsgReceived
         , AnimationFrame.times AnimationFrame
         , case model.stage of
             TradeStage _ ->
@@ -36,15 +31,14 @@ update msg model =
             case msg of
                 Ready ->
                     ( model
-                    , WebSocket.send wsUrl
-                        (Api.encodeToMessage Api.Ready)
+                    , Server.send model Api.Ready
                     )
 
         ProductionMsg msg ->
             tryUpdateProduction model (updateProduction msg)
 
         AuctionMsg msg ->
-            tryUpdateAuction (updateAuction msg) model
+            tryUpdateAuction (updateAuction msg (Server.send model)) model
 
         TradeMsg msg ->
             case msg of
@@ -86,26 +80,18 @@ update msg model =
                         )
                         model
 
-        Input newInput ->
-            ( { model | input = newInput }, Cmd.none )
-
-        MsgServer ->
-            ( { model | input = "" }
-            , WebSocket.send wsUrl model.input
-            )
-
-        ServerMsgReceived str ->
-            case Api.decodeMessage str of
+        ServerMsgReceived action ->
+            case action of
                 Ok action ->
                     { model
-                        | messages = str :: model.messages
+                        | messages = toString action :: model.messages
                     }
                         |> handleAction action
 
                 Err e ->
                     ( { model
                         | messages =
-                            (str ++ " <--- " ++ e) :: model.messages
+                            e :: model.messages
                       }
                     , Cmd.none
                     )
@@ -161,28 +147,26 @@ updateProduction msg m =
             )
 
 
-updateAuction : AuctionMsg -> AuctionModel -> ( AuctionModel, Cmd Msg )
-updateAuction msg m =
+updateAuction : AuctionMsg -> Server.SendToServer -> AuctionModel -> ( AuctionModel, Cmd Msg )
+updateAuction msg send m =
     case msg of
         Bid ->
             ( m
-            , WebSocket.send wsUrl
-                (Api.encodeToMessage
-                    (Api.Bid
-                        {- [tofix] duplicate -}
-                        (case m.auction of
-                            Just a ->
-                                case a.highestBid of
-                                    Just { bid } ->
-                                        bid + 5
+            , send
+                (Api.Bid
+                    {- [tofix] duplicate -}
+                    (case m.auction of
+                        Just a ->
+                            case a.highestBid of
+                                Just { bid } ->
+                                    bid + 5
 
-                                    Nothing ->
-                                        a.card.startingBid
+                                Nothing ->
+                                    a.card.startingBid
 
-                            Nothing ->
-                                Debug.crash
-                                    "Bid button should be disabled when no card"
-                        )
+                        Nothing ->
+                            Debug.crash
+                                "Bid button should be disabled when no card"
                     )
                 )
             )

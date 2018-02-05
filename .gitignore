@@ -3,6 +3,7 @@
 *.dll
 *.so
 *.dylib
+bin/*
 
 # Test binary, build with `go test -c`
 *.test
@@ -28,6 +29,9 @@ repl-temp-*
 mushunew
 mushu-new
 server/server
+
+# The compiled elm output
+web/elm.js
 
 # No compiled output
 *elm.js
