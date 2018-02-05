@@ -18,8 +18,8 @@ view : Model -> Html Msg
 view model =
     div [ class "view" ] <|
         List.concat
-            [ [ div [ class "heading" ] [ text "mushu: test" ] ]
-            , [ div [ class "active-state" ]
+            [ [ topBar model
+              , div [ class "active-state" ]
                     [ case model.stage of
                         ReadyStage m ->
                             Html.map ReadyMsg (readyView m)
@@ -48,8 +48,27 @@ view model =
                           ]
                         ]
                     )
+              , div [] (List.map viewMessage (List.reverse model.messages))
               ]
             ]
+
+
+topBar : Model -> Html Msg
+topBar model =
+    div [ class "heading" ]
+        [ div [] [ text "mushu: test" ]
+        , div [] <|
+            case
+                timer model.stage
+            of
+                Just timer ->
+                    [ text
+                        (toString << floor << Time.inSeconds << timeLeft <| timer)
+                    ]
+
+                Nothing ->
+                    []
+        ]
 
 
 inventoryView : Material Int -> Html Msg
@@ -237,32 +256,14 @@ productionView factories m =
 
 auctionView : AuctionModel -> Int -> Html AuctionMsg
 auctionView m gold =
-    div []
-        [ case m.auction of
-            Just a ->
-                div [] <|
-                    List.map (div [] << List.singleton) <|
-                        List.concat <|
-                            [ [ div [ class "card" ] <|
-                                    List.concat
-                                        [ [ div [ class "card-text" ] [ text a.card.name ] ]
-                                        , [ button [ onClick Msg.Bid, disabled (cantBid a.highestBid gold), class "card-button" ]
-                                                [ text <|
-                                                    "Bid: "
-                                                        ++ toString
-                                                            {- [tofix] duplicate -}
-                                                            (case a.highestBid of
-                                                                Just { bid } ->
-                                                                    bid + bidIncrement
-
-                                                                Nothing ->
-                                                                    a.card.startingBid
-                                                            )
-                                                ]
-                                          ]
-                                        ]
-                              ]
-                            , case a.highestBid of
+    case m.auction of
+        Just a ->
+            div [ class "card" ] <|
+                List.concat
+                    [ [ div [ class "card-text" ] [ text a.card.name ] ]
+                    , List.map (div [] << List.singleton) <|
+                        List.concat
+                            [ case a.highestBid of
                                 Just { bidder, bid } ->
                                     [ text <| "Highest Bid: " ++ toString bid
                                     , text <| "Highest Bidder: " ++ bidder
@@ -270,11 +271,29 @@ auctionView m gold =
 
                                 Nothing ->
                                     []
-                            ]
+                            , [ button
+                                    [ onClick Msg.Bid
+                                    , disabled (cantBid a.highestBid gold)
+                                    , class "card-button"
+                                    ]
+                                    [ text <|
+                                        "Bid: "
+                                            ++ toString
+                                                {- [tofix] duplicate -}
+                                                (case a.highestBid of
+                                                    Just { bid } ->
+                                                        bid + bidIncrement
 
-            Nothing ->
-                text "No Cards in Auction"
-        ]
+                                                    Nothing ->
+                                                        a.card.startingBid
+                                                )
+                                    ]
+                              ]
+                            ]
+                    ]
+
+        Nothing ->
+            text "No Cards in Auction"
 
 
 cantBid : Maybe Bid -> Int -> Bool
