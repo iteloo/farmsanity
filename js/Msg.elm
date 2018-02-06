@@ -12,6 +12,7 @@ type Msg
     | TradeMsg TradeMsg
     | ServerMsgReceived (Result String Api.Action)
     | ToggleInventory
+    | CardActivated Int
     | UpdateTimer Time
     | Shake
 

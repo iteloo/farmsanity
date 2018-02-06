@@ -2,6 +2,7 @@ module Update exposing (update, subscriptions)
 
 import BaseType exposing (..)
 import Material exposing (Material)
+import Card exposing (Card)
 import Model exposing (..)
 import Msg exposing (..)
 import Api
@@ -78,6 +79,16 @@ update msg model =
             ( { model | inventoryVisible = not model.inventoryVisible }
             , Cmd.none
             )
+
+        CardActivated index ->
+            case
+                Helper.tryApplyCardEffect index model
+            of
+                Ok r ->
+                    r
+
+                Err e ->
+                    Debug.crash ("Card activation error: " ++ e)
 
         Shake ->
             tryUpdateTrade
@@ -354,8 +365,7 @@ handleAction action model =
                     ( { m
                         | auction =
                             Just
-                                { -- [tmp] bogus card
-                                  card = blueberryJam
+                                { card = Card.fromSeed seed
                                 , highestBid = Nothing
                                 , timer = Timer.init (5 * Time.second)
                                 }

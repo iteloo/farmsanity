@@ -1,18 +1,22 @@
 module Material
     exposing
-        ( Fruit
+        ( Fruit(..)
         , allFruits
         , fruitFromString
+        , shorthand
         , Material
         , lookup
         , create
         , empty
         , toList
+        , values
         , map
         , map2
         , traverseMaybe
+        , set
         , update
         , tryUpdate
+        , trySubtract
         , fold
         )
 
@@ -46,6 +50,11 @@ fruitFromString str =
 
         _ ->
             Nothing
+
+
+shorthand : Fruit -> String
+shorthand =
+    String.toLower << String.left 1 << toString
 
 
 type alias Material a =
@@ -91,6 +100,11 @@ toList mat =
     List.map (\fr -> ( fr, lookup fr mat )) allFruits
 
 
+values : Material a -> List a
+values =
+    toList >> List.map Tuple.second
+
+
 map : (Fruit -> a -> b) -> Material a -> Material b
 map f mat =
     create (\fr -> f fr (lookup fr mat))
@@ -124,6 +138,11 @@ traverseMaybe mat =
         allFruits
 
 
+set : Fruit -> a -> Material a -> Material a
+set fruit =
+    update fruit << always
+
+
 update : Fruit -> (a -> a) -> Material a -> Material a
 update fruit upd =
     map
@@ -154,3 +173,24 @@ tryUpdate fruit f =
 fold : (Fruit -> a -> b -> b) -> b -> Material a -> b
 fold acc b =
     List.foldr (uncurry acc) b << toList
+
+
+trySubtract : Material number -> Material number -> Maybe (Material number)
+trySubtract =
+    curry <|
+        traverseMaybe
+            << uncurry
+                (map2
+                    (always
+                        (\a b ->
+                            let
+                                d =
+                                    b - a
+                            in
+                                if d >= 0 then
+                                    Just d
+                                else
+                                    Nothing
+                        )
+                    )
+                )

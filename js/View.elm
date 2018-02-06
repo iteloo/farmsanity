@@ -75,13 +75,15 @@ topBar model =
 
 
 inventoryView : Material Int -> Html Msg
-inventoryView mat =
-    div [] <|
-        List.map
-            (\fr ->
-                text (toString fr ++ ": " ++ toString (Material.lookup fr mat))
-            )
-            Material.allFruits
+inventoryView =
+    div []
+        << List.singleton
+        << text
+        << List.foldr (++) ""
+        << List.intersperse " "
+        << Material.values
+        << Material.map
+            (\fr c -> toString c ++ Material.shorthand fr)
 
 
 toolbar : Model -> Html Msg
@@ -89,8 +91,33 @@ toolbar m =
     div [] <|
         List.concat
             [ [ button [ onClick ToggleInventory ] [ text "Inventory" ] ]
-            , List.map
-                (button [] << List.singleton << text << .name)
+            , List.indexedMap
+                (\i card ->
+                    button
+                        [ onClick (CardActivated i)
+                        , disabled
+                            (Helper.isErr (Helper.tryApplyCardEffect i m))
+                        ]
+                    <|
+                        List.map (div [] << List.singleton)
+                            [ text card.name
+                            , text
+                                << (++) "Cost: "
+                                << List.foldr (++) ""
+                                << List.intersperse " "
+                              <|
+                                List.filterMap
+                                    (\( fr, c ) ->
+                                        if c /= 0 then
+                                            Just <|
+                                                toString c
+                                                    ++ Material.shorthand fr
+                                        else
+                                            Nothing
+                                    )
+                                    (Material.toList card.resourceCost)
+                            ]
+                )
                 m.cards
             ]
 

@@ -18,14 +18,16 @@ type alias Price =
     Material Float
 
 
-type alias Card =
-    { name : String
-    , startingBid : Int
-    }
+type Uber number
+    = Finite number
+    | Infinite
 
 
-blueberryJam : Card
-blueberryJam =
-    { name = "Blueberry Jam"
-    , startingBid = 3
-    }
+add : Uber number -> number -> Uber number
+add x y =
+    case x of
+        Finite z ->
+            Finite (z + y)
+
+        Infinite ->
+            Infinite
