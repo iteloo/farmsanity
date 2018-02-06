@@ -27,6 +27,7 @@ type Game struct {
 	tick        time.Duration
 	Market      Market
 	MinPlayers  int
+	Yield       map[CommodityType]float64
 }
 
 // NewGame constructs a game.
@@ -36,10 +37,16 @@ func NewGame(name string, connection GameConnection) *Game {
 		connection: connection,
 		state:      nil,
 		Market:     NewMarket(),
+		Yield:      make(map[CommodityType]float64),
 		MinPlayers: MinPlayers,
 	}
 	game.state = NewStateController(&game, WaitingState)
 	game.state.Begin()
+
+	for _, c := range AllCommodities {
+		game.Yield[c] = 1.00
+	}
+
 	return &game
 }
 
@@ -67,13 +74,27 @@ func (g *Game) Tick(time time.Duration) {
 	}
 }
 
+func (g *Game) ApplyEffects(msg ApplyEffectMessage) {
+	g.Market.ApplyModifier(msg.PriceModifier)
+
+	for _, c := range AllCommodities {
+		g.Yield[c] *= msg.YieldRateModifier[c]
+	}
+
+	// Inform the consumers that the effects are updated.
+	g.connection.Broadcast(NewEffectMessage(g.Yield))
+}
+
 // RecieveMessage is called when a user sends a message to the server.
 func (g *Game) RecieveMessage(user User, message Message) {
 	switch msg := message.(type) {
 	case JoinMessage:
 		user.Message(NewWelcomeMessage(g.name, string(g.state.Name())))
+		user.Message(NewEffectMessage(g.Yield))
 	case SetNameMessage:
 		user.SetName(msg.Name)
+	case ApplyEffectMessage:
+		g.ApplyEffects(msg)
 	}
 	g.state.RecieveMessage(user, message)
 }
