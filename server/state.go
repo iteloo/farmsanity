@@ -78,6 +78,10 @@ func (s *WaitingController) RecieveMessage(u User, m Message) {
 		s.ready[u] = false
 	case LeaveMessage:
 		delete(s.ready, u)
+	case SetNameMessage:
+		// Just send a playerinfo update (done below), 
+		// no need to take action, since
+		// this is done by the game controller.
 	default:
 		return
 	}
