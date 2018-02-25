@@ -1,11 +1,13 @@
 module View exposing (view)
 
+import Card exposing (Card)
 import Material exposing (Material)
 import Model exposing (..)
 import Msg exposing (..)
 import Timer
 import Lens
 import Helper
+import ZoomList exposing (ZoomList)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -14,7 +16,7 @@ import Time
 
 view : Model -> Html Msg
 view model =
-    div [ class "view" ] <|
+    div [ class "overview" ] <|
         List.singleton <|
             Html.map AppMsg <|
                 case model.app of
@@ -27,8 +29,9 @@ view model =
 
 welcomeView : WelcomeModel -> Html WelcomeMsg
 welcomeView model =
-    div []
-        [ div [ class "box" ]
+    div [ class "welcome" ]
+        [ div [] []
+        , div [ class "box" ]
             [ div [ class "box-text" ]
                 [ text "Type the name of the game to join:" ]
             , input
@@ -47,7 +50,7 @@ welcomeView model =
 
 gameView : GameModel -> Html GameMsg
 gameView model =
-    div [] <|
+    div [ class "view" ] <|
         List.concat
             [ [ topBar model
               , div [ class "active-state" ]
@@ -68,19 +71,55 @@ gameView model =
               ]
             , [ div [ class "tray" ]
                     (List.concat
-                        [ if model.inventoryVisible then
-                            [ inventoryView model.inventory ]
-                          else
-                            []
+                        [ [ inventoryView model.inventory ]
                         , [ toolbar model
-                          , div []
-                                [ text ("$" ++ (toString model.gold))
-                                ]
+                          , div [] []
                           ]
+                        , case ZoomList.zoomed model.cards of
+                            Just c ->
+                                [ cardDetailView model c ]
+
+                            Nothing ->
+                                []
                         ]
                     )
               ]
             ]
+
+
+cardDetailView : GameModel -> Card -> Html GameMsg
+cardDetailView m card =
+    div []
+        [ div [ class "popover" ]
+            [ cardView card
+            , div [ class "card-activation-tray" ] <|
+                List.concat
+                    [ [ text "Cost: " ]
+                    , List.intersperse (text " ") <|
+                        List.filterMap
+                            (\( fr, c ) ->
+                                if c /= 0 then
+                                    Just <|
+                                        div [ class (toString fr) ]
+                                            [ text (toString c) ]
+                                else
+                                    Nothing
+                            )
+                            (Material.toList card.resourceCost)
+                    , [ button
+                            [ class "box-button"
+                            , onClick ActivateButton
+                            , disabled
+                                (Helper.isErr
+                                    (Helper.tryApplyZoomCardEffectLocal m)
+                                )
+                            ]
+                            [ text "Activate" ]
+                      ]
+                    ]
+            ]
+        , div [ class "overlay", onClick DismissCardDetailView ] []
+        ]
 
 
 icon : String -> String -> Html GameMsg
@@ -120,51 +159,83 @@ topBar model =
 
 
 inventoryView : Material Int -> Html GameMsg
-inventoryView =
-    div []
-        << List.singleton
-        << text
-        << List.foldr (++) ""
-        << List.intersperse " "
-        << Material.values
-        << Material.map
-            (\fr c -> toString c ++ Material.shorthand fr)
+inventoryView inv =
+    div [ class "inventory" ]
+        (Material.values
+            (Material.map
+                (\fruit count ->
+                    div [ class ("inventory-item " ++ (toString fruit)) ]
+                        [ text (toString count) ]
+                )
+                inv
+            )
+        )
+
+
+{-| Takes the card to display, and also
+the full zoomlist to update the model on user click.
+-}
+miniCardView : Card -> ZoomList Card -> Html GameMsg
+miniCardView card onclickCards =
+    div
+        [ onClick (UpdateCards onclickCards)
+        , class "card-micro"
+        ]
+        [ text card.name ]
+
+
+cardPlaceholder : Html GameMsg
+cardPlaceholder =
+    div [ class "card-micro card-placeholder" ] []
 
 
 toolbar : GameModel -> Html GameMsg
 toolbar m =
-    div [] <|
-        List.concat
-            [ [ button [ onClick ToggleInventory ] [ text "Inventory" ] ]
-            , List.indexedMap
-                (\i card ->
-                    button
-                        [ onClick (CardActivated i)
-                        , disabled
-                            (Helper.isErr (Helper.tryApplyCardEffectLocal i m))
-                        ]
-                    <|
-                        List.map (div [] << List.singleton)
-                            [ text card.name
-                            , text
-                                << (++) "Cost: "
-                                << List.foldr (++) ""
-                                << List.intersperse " "
-                              <|
-                                List.filterMap
-                                    (\( fr, c ) ->
-                                        if c /= 0 then
-                                            Just <|
-                                                toString c
-                                                    ++ Material.shorthand fr
-                                        else
-                                            Nothing
+    div [ class "card-shelf" ] <|
+        List.take 4
+            (List.concat
+                [ {- [note] What this foldr does is generating
+                     a list of `miniCardView`s by consecutively applying
+                     `prev` to the zoomlist of cards to move the zooming
+                     one card to the left each time.
+
+                     `miniCardView` takes the card to display, and also
+                     the full zoomlist to update the model with on click.
+
+                     If the clicked card is not the zoomed card, we update the
+                     model using a zoomlist zoomed at the card, which will
+                     result in the detail view appearing.
+
+                     If on the other hand, the clicked card is the zoomed card,
+                     we update the model using an unzoomed list,
+                     which will result in the detail view closing.
+                  -}
+                  let
+                    acc zoomed c ( cards, views ) =
+                        case ZoomList.prev cards of
+                            Nothing ->
+                                Debug.crash "There should be enough cards"
+
+                            Just cs ->
+                                ( cs
+                                , miniCardView c
+                                    (if zoomed then
+                                        ZoomList.unzoom cs
+                                     else
+                                        cs
                                     )
-                                    (Material.toList card.resourceCost)
-                            ]
-                )
-                m.cards
-            ]
+                                    :: views
+                                )
+                  in
+                    Tuple.second <|
+                        ZoomList.foldr
+                            (acc False)
+                            (acc True)
+                            ( ZoomList.unzoom m.cards, [] )
+                            m.cards
+                , List.repeat 4 cardPlaceholder
+                ]
+            )
 
 
 readyOrWaitingIcon : Bool -> Html ReadyMsg
@@ -181,7 +252,8 @@ readyView m =
         [ div [ class "box" ]
             [ div [ class "box-text" ] [ text "Set your name:" ]
             , input [ placeholder "Anonymous", onInput NameInputChange ] []
-            , button [ class "box-button", onClick (Ready True) ] [ text "Ready" ]
+            , button [ class "box-button", onClick (Ready True) ]
+                [ text "Ready" ]
             ]
         , div [ class "ready-status" ]
             [ div [ class "box-text" ] [ text "Waiting for players..." ]
@@ -352,20 +424,28 @@ productionView factories m =
             Material.allFruits
 
 
+cardView : Card -> Html a
+cardView card =
+    div [ class "card" ]
+        [ div [ class "card-heading" ]
+            [ div [ class "card-title" ] [ text card.name ]
+            ]
+        , div [ class "card-text" ]
+            [ -- [tmp] same dummy text for every card
+              text "When activated, the fruit will go sour."
+            ]
+        ]
+
+
 auctionView : AuctionModel -> Int -> Html AuctionMsg
 auctionView m gold =
     case m.auction of
         Just a ->
             div [] <|
                 List.concat
-                    [ [ div [ class "box-text" ] [ text "Up for auction:" ]
-                      , div [ class "card" ]
-                            [ div [ class "card-heading" ]
-                                [ div [ class "card-title" ] [ text a.card.name ]
-                                , div [ class "card-cost" ] [ text "3T" ]
-                                ]
-                            , div [ class "card-text" ] [ text "When activated, the fruit will go sour." ]
-                            ]
+                    [ [ div [ class "box-text" ]
+                            [ text "Up for auction:" ]
+                      , cardView a.card
                       , div [ class "auction-control" ]
                             [ div [ class "auction-status" ]
                                 [ div [ class "box-text" ] [ text "Winner:" ]
@@ -385,15 +465,13 @@ auctionView m gold =
                                 , disabled (gold < Helper.nextBid a)
                                 , class "box-button"
                                 ]
-                                [ text <| "Bid: " ++ toString (Helper.nextBid a) ]
+                                [ text <|
+                                    "Bid: "
+                                        ++ toString (Helper.nextBid a)
+                                ]
                             ]
                       ]
                     ]
 
         Nothing ->
             text "No Cards in Auction"
-
-
-viewMessage : String -> Html msg
-viewMessage msg =
-    div [] [ text msg ]

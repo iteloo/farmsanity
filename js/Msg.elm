@@ -1,8 +1,10 @@
 module Msg exposing (..)
 
+import Card exposing (Card)
 import Material exposing (Fruit, Material)
-import Time exposing (Time)
 import Api
+import ZoomList exposing (ZoomList)
+import Time exposing (Time)
 
 
 type Msg
@@ -25,9 +27,10 @@ type GameMsg
     | ProductionMsg ProductionMsg
     | AuctionMsg AuctionMsg
     | TradeMsg TradeMsg
-    | ToggleInventory
-    | CardActivated Int
+    | ActivateButton
     | UpdateTimer Time
+    | UpdateCards (ZoomList Card)
+    | DismissCardDetailView
 
 
 type ReadyMsg
